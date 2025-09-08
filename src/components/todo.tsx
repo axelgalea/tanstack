@@ -35,12 +35,24 @@ export function TodoItem({ todo }: { todo: Todo }) {
 		mutationFn: todosAPI.toggleCompleted.mutationFn,
 		onSuccess: () => {
 			queryClient.invalidateQueries({
-				queryKey: [todosAPI.findAll.queryKey],
+				queryKey: todosAPI.findAll.queryKey,
 			});
 		},
 		onError: () => {
 			alert("Something went wrong");
 			inputRef.current!.checked = !inputRef.current!.checked;
+		},
+	});
+
+	const { mutate: deleteTodo } = useMutation({
+		mutationFn: todosAPI.delete.mutationFn,
+		onSuccess: () => {
+			queryClient.invalidateQueries({
+				queryKey: todosAPI.findAll.queryKey,
+			});
+		},
+		onError: () => {
+			alert("Something went wrong");
 		},
 	});
 
@@ -60,6 +72,10 @@ export function TodoItem({ todo }: { todo: Todo }) {
 				{todo.title}
 			</label>
 			{isPending ? <Spinner className="w-4 h-4 fill-white" /> : null}
+
+			<button onClick={() => deleteTodo(todo.id)} className="bg-red-500 text-white rounded-md p-2 cursor-pointer">
+				Delete
+			</button>
 		</div>
 	);
 }

@@ -6,16 +6,26 @@ import ReactDOM from "react-dom/client";
 import { routeTree } from "./routeTree.gen";
 
 import "./styles.css";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import reportWebVitals from "./reportWebVitals.ts";
+
+const queryClient = new QueryClient();
 
 // Create a new router instance
 const router = createRouter({
 	routeTree,
-	context: {},
+	context: {
+		queryClient,
+	},
 	defaultPreload: "intent",
 	scrollRestoration: true,
 	defaultStructuralSharing: true,
 	defaultPreloadStaleTime: 0,
+	Wrap: ({ children }) => {
+		return (
+			<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+		);
+	},
 });
 
 // Register the router instance for type safety

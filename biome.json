@@ -8,10 +8,10 @@
 	"files": {
 		"ignoreUnknown": false,
 		"includes": [
-			"src/*",
+			"src/**/*.{ts,tsx,js,jsx,json,css}",
 			".vscode/*",
 			"index.html",
-			"vite.config.js",
+			"vite.config.ts",
 			"!src/routeTree.gen.ts"
 		]
 	},
@@ -27,6 +27,12 @@
 			"recommended": true,
 			"suspicious": {
 				"noUnknownAtRules": "error"
+			},
+			"correctness": {
+				"noChildrenProp": "off"
+			},
+			"style": {
+				"noNonNullAssertion": "off"
 			}
 		}
 	},

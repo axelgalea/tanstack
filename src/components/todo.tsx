@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { todosAPI } from "@/api/todos.api";
 import { CreateTodoSchema, type Todo } from "@/schemas/todo.schema";
 import { Spinner } from "./spinner";
+import { FieldInfo } from "./forms";
 
 export function TodoList() {
 	const { data, isPending, error } = useQuery(todosAPI.findAll);
@@ -138,11 +139,7 @@ export function AddTodoForm() {
 								value={field.state.value}
 								className="w-full rounded-md border-2 border-gray-300 p-2"
 							/>
-							{field.state.meta.errors.length > 0 ? (
-								<em className="text-red-500 text-sm font-semibold">
-									{field.state.meta.errors[0]?.message}
-								</em>
-							) : null}
+							<FieldInfo field={field} />
 						</div>
 					);
 				}}

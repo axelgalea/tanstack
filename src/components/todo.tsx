@@ -1,25 +1,25 @@
+import { useLiveQuery } from "@tanstack/react-db";
 import { useForm } from "@tanstack/react-form";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef } from "react";
-import { todosAPI } from "@/api/todos.api";
+import { todosCollection } from "@/collections/todos.collection";
 import { CreateTodoSchema, type Todo } from "@/schemas/todo.schema";
-import { Spinner } from "./spinner";
 import { FieldInfo } from "./forms";
+import {v4 } from "uuid"
 
 export function TodoList() {
-	const { data, isPending, error } = useQuery(todosAPI.findAll);
+	const { data: todos, isLoading } = useLiveQuery((q) =>
+		q
+			.from({ todo: todosCollection })
+			.orderBy(({ todo }) => todo.created_at, "desc"),
+	);
 
-	if (isPending) {
+	if (isLoading) {
 		return <div>Loading...</div>;
-	}
-
-	if (error) {
-		return <div>Error {error.message}</div>;
 	}
 
 	return (
 		<ul className="flex flex-col gap-4">
-			{data.results.map((todo) => (
+			{todos.map((todo) => (
 				<li key={todo.id} className="w-full h-fit">
 					<TodoItem todo={todo} />
 				</li>
@@ -30,32 +30,16 @@ export function TodoList() {
 
 export function TodoItem({ todo }: { todo: Todo }) {
 	const inputRef = useRef<HTMLInputElement>(null);
-	const queryClient = useQueryClient();
 
-	const { mutate: toggleCompleted, isPending } = useMutation({
-		mutationFn: todosAPI.toggleCompleted.mutationFn,
-		onSuccess: () => {
-			queryClient.invalidateQueries({
-				queryKey: todosAPI.findAll.queryKey,
-			});
-		},
-		onError: () => {
-			alert("Something went wrong");
-			inputRef.current!.checked = !inputRef.current!.checked;
-		},
-	});
+	const toggleTodo = (todo: Todo) => {
+		todosCollection.update(todo.id, (draft) => {
+			draft.completed = draft.completed ? null : new Date();
+		});
+	};
 
-	const { mutate: deleteTodo } = useMutation({
-		mutationFn: todosAPI.delete.mutationFn,
-		onSuccess: () => {
-			queryClient.invalidateQueries({
-				queryKey: todosAPI.findAll.queryKey,
-			});
-		},
-		onError: () => {
-			alert("Something went wrong");
-		},
-	});
+	const deleteTodo = (todo: Todo) => {
+		todosCollection.delete(todo.id);
+	};
 
 	return (
 		<div className="flex items-center gap-4">
@@ -66,15 +50,17 @@ export function TodoItem({ todo }: { todo: Todo }) {
 				<input
 					id={todo.id}
 					ref={inputRef}
-					onChange={() => toggleCompleted(todo.id)}
+					onChange={() => toggleTodo(todo)}
 					type="checkbox"
 					defaultChecked={todo.completed !== null}
 				/>
 				{todo.title}
 			</label>
-			{isPending ? <Spinner className="w-4 h-4 fill-white" /> : null}
-
-			<button onClick={() => deleteTodo(todo.id)} className="bg-red-500 text-white rounded-md p-2 cursor-pointer">
+			<button
+				type="button"
+				onClick={() => deleteTodo(todo)}
+				className="bg-red-500 text-white rounded-md p-2 cursor-pointer"
+			>
 				Delete
 			</button>
 		</div>
@@ -82,19 +68,6 @@ export function TodoItem({ todo }: { todo: Todo }) {
 }
 
 export function AddTodoForm() {
-	const queryClient = useQueryClient();
-	const { mutate: createTodo } = useMutation({
-		mutationFn: todosAPI.create.mutationFn,
-		onSuccess: async () => {
-			await queryClient.invalidateQueries({
-				queryKey: todosAPI.findAll.queryKey,
-			});
-		},
-		onError: (error) => {
-			console.log(error);
-		},
-	});
-
 	const form = useForm({
 		defaultValues: {
 			title: "",
@@ -104,11 +77,22 @@ export function AddTodoForm() {
 			onChange: CreateTodoSchema,
 		},
 		onSubmit: async ({ value }) => {
-			createTodo(value, {
-				onSuccess: () => {
-					form.reset();
-				},
-			});
+			todosCollection.insert({
+				id: v4(),
+				title: value.title,
+				description: null,
+				completed: null,
+				created_at: new Date(),
+				updated_at: new Date(),
+				deleted_at: null,
+				url: "1"
+			}, {
+				metadata: {
+					source: "web",
+				}
+			})
+
+			form.reset();
 		},
 	});
 	return (
